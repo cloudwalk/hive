@@ -1,0 +1,28 @@
+version: "2"
+services:
+
+  hiveview:
+    image: hiveview
+    build:
+      context: .
+      dockerfile: Dockerfile.hiveview
+    ports:
+      - 8080:8080
+    command:
+      - /source/hiveview
+      - --serve
+      - --addr=0.0.0.0:3001
+      - --logdir=/source/logs
+    volumes:
+      - ./logs:/source/logs
+    networks:
+      hiveview:
+        ipv4_address: 192.168.10.99
+
+volumes:
+  postgres-data:
+
+networks:
+  hiveview:
+    name: hiveview
+    external: true
