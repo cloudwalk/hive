@@ -1,0 +1,30 @@
+# Build, create image and build, because it cannot be done in hive docker context
+# should be run first if something were changed in Stratus code
+# sudo docker build -f hive/clients/stratus/Dockerfile_base -t stratus_base .
+FROM rust:1.75 as builder
+
+ARG github=cloudwalk/stratus
+ARG tag=main
+
+WORKDIR /app
+
+WORKDIR /app
+COPY .git /app/.git
+COPY build.rs /app/build.rs
+COPY src /app/src
+COPY static /app/static
+COPY config /app/config
+COPY .sqlx /app/.sqlx
+COPY .cargo .cargo
+COPY Cargo.toml /app/Cargo.toml
+COPY Cargo.lock /app/Cargo.lock
+
+RUN apt update
+RUN apt-get install -y libclang-dev cmake protobuf-compiler
+
+ENV CARGO_PROFILE_RELEASE_DEBUG=1
+ENV JSON_LOGS=1
+ENV NO_COLOR=1
+
+RUN cargo build --release --features dev
+
