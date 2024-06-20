@@ -1,0 +1,36 @@
+# Build
+FROM rust:1.75 as builder
+
+ARG github=cloudwalk/stratus
+ARG tag=main
+
+WORKDIR /app
+
+RUN apt update
+RUN apt-get install -y libclang-dev cmake protobuf-compiler git
+
+RUN #echo "Cloning: $github - $tag" \
+    && git clone --depth 1 --branch $tag https://github.com/$github .
+
+ENV CARGO_PROFILE_RELEASE_DEBUG=1
+ENV JSON_LOGS=1
+ENV NO_COLOR=1
+
+RUN cargo build --release --features dev
+
+# Runtime
+FROM rust:1.75 as runtime
+WORKDIR /app
+COPY --from=builder /app/target/release/stratus /app/stratus
+COPY ./stratusclient/config /config
+ADD stratus.sh /stratus.sh
+RUN chmod +x /stratus.sh
+RUN apt-get update && apt-get install -y bash curl jq
+ADD hive-bin/createcontracts.sh /hive-bin/createcontracts.sh
+RUN chmod +x /hive-bin/createcontracts.sh
+
+#RUN '1.0.0' > /version.txt
+
+EXPOSE 8545 8546 8547 8551 30303 30303/udp
+
+ENTRYPOINT ["/stratus.sh"]
